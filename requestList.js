@@ -6,10 +6,37 @@
 
 	var listeners = [];
 
-	showListBtn.addEventListener("click", function() {
-		chrome.devtools.network.getHAR(displayRequests);
+	showListBtn.addEventListener("click", reload);
+	errorsOnly.addEventListener("click", function() {
+		chrome.storage.local.set({
+			errorsOnly: errorsOnly.checked
+		});
+		reload();
 	});
-	chrome.devtools.network.getHAR(displayRequests);
+
+	filter.addEventListener("change", function() {
+		chrome.storage.local.set({
+			filter: filter.value
+		});
+		reload();
+	});
+
+	loadSettings();
+	reload();
+
+	function loadSettings() {
+		chrome.storage.local.get([
+			"filter",
+			"errorsOnly"
+		], function(settings) {
+			filter.value = settings.filter || "";
+			errorsOnly.checked = !!settings.errorsOnly;
+		});
+	}
+
+	function reload() {
+		chrome.devtools.network.getHAR(displayRequests);
+	}
 
 	function displayRequests(har) {
 		// console.log(har);
@@ -43,13 +70,16 @@
 		if (request.response.status >= 400) {
 			statusNode.className = "error";
 		}
+		var methodNode = document.createElement("td");
+		methodNode.innerHTML = request.request.method;
 		var urlNode = document.createElement("td");
 		urlNode.innerHTML = request.request.url;
-		requestListBody.appendChild(row);
 
 		row.appendChild(copyNode);
 		row.appendChild(statusNode);
+		row.appendChild(methodNode);
 		row.appendChild(urlNode);
+		requestListBody.appendChild(row);
 	}
 
 	function createCopyBtn(request) {
